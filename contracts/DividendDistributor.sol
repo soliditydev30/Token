@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "../interfaces/IDividendDistributor.sol";
+import "./interfaces/IDividendDistributor.sol";
 
 
 contract DividendDistributor is IDividendDistributor {
@@ -72,7 +72,7 @@ contract DividendDistributor is IDividendDistributor {
         dividendsPerShare = dividendsPerShare.add(dividendsPerShareAccuracyFactor.mul(amount).div(totalShares));
     }
 
-    function process(uint256 gas) public override onlyToken {
+    function process() public override onlyToken {
         uint256 shareholderCount = shareholders.length;
 
         if (shareholderCount == 0)

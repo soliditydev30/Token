@@ -2,24 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-
-//      ██╗  ██╗██╗   ██╗██╗  ██╗    ████████╗ ██████╗ ██╗  ██╗███████╗███╗   ██╗
-//      ██║  ██║██║   ██║██║  ██║    ╚══██╔══╝██╔═══██╗██║ ██╔╝██╔════╝████╗  ██║
-//      ███████║██║   ██║███████║       ██║   ██║   ██║█████╔╝ █████╗  ██╔██╗ ██║
-//      ██╔══██║██║   ██║██╔══██║       ██║   ██║   ██║██╔═██╗ ██╔══╝  ██║╚██╗██║
-//      ██║  ██║╚██████╔╝██║  ██║       ██║   ╚██████╔╝██║  ██╗███████╗██║ ╚████║
-//      ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝       ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝
-
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./interfaces/IBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IDividendDistributor.sol";
-import { DividendDistributor, IDividendDistributor } from "./dividends/DividendDistributor.sol";
-import { IUniswapV2Pair, IUniswapV2Router02, IUniswapV2Factory } from "./interfaces/IUniswap.sol";
+import "./interfaces/IUniswap.sol";
+import "./DividendDistributor.sol";
 
-
-contract HuhToken is Context, IBEP20, Ownable {
+contract HuhToken is Context, ERC20, Ownable {
     using SafeMath for uint256;
 
     string constant _NAME = "HuhToken";
@@ -123,8 +113,7 @@ contract HuhToken is Context, IBEP20, Ownable {
     //  CONSTRUCTOR
     //  -----------------------------
 
-
-    constructor() {
+    constructor() ERC20(_NAME, _SYMBOL) {
         IUniswapV2Router02 _pancakeswapV2Router =
             IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
 
@@ -157,7 +146,6 @@ contract HuhToken is Context, IBEP20, Ownable {
     //  -----------------------------
     //  SETTERS (PROTECTED)
     //  -----------------------------
-
 
     function excludeFromReward(address account) public onlyOwner {
         _excludeFromReward(account);
@@ -273,7 +261,6 @@ contract HuhToken is Context, IBEP20, Ownable {
     //  SETTERS
     //  -----------------------------
 
-
     function whitelist(string memory refCode) external {
         bytes memory refCode_ = bytes(refCode);
         require(refCode_.length > 0, "Invalid code!");
@@ -292,20 +279,12 @@ contract HuhToken is Context, IBEP20, Ownable {
         _registerCode(msg.sender, code_);
     }
 
-    function transfer(address recipient, uint256 amount)
-        public
-        override
-        returns (bool)
-    {
+    function transfer(address recipient, uint256 amount) public override returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    function approve(address spender, uint256 amount)
-        public
-        override
-        returns (bool)
-    {
+    function approve(address spender, uint256 amount) public override returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -327,11 +306,7 @@ contract HuhToken is Context, IBEP20, Ownable {
         return true;
     }
 
-    function increaseAllowance(address spender, uint256 addedValue)
-        public
-        virtual
-        returns (bool)
-    {
+    function increaseAllowance(address spender, uint256 addedValue) public override returns (bool) {
         _approve(
             _msgSender(),
             spender,
@@ -340,11 +315,7 @@ contract HuhToken is Context, IBEP20, Ownable {
         return true;
     }
 
-    function decreaseAllowance(address spender, uint256 subtractedValue)
-        public
-        virtual
-        returns (bool)
-    {
+    function decreaseAllowance(address spender, uint256 subtractedValue) public override returns (bool) {
         _approve(
             _msgSender(),
             spender,
@@ -360,7 +331,6 @@ contract HuhToken is Context, IBEP20, Ownable {
     //  -----------------------------
     //  GETTERS
     //  -----------------------------
-
 
     function name() public pure override returns (string memory) {
         return _NAME;
@@ -385,15 +355,6 @@ contract HuhToken is Context, IBEP20, Ownable {
         return tokenFromReflection(_rOwned[account]);
     }
 
-    function allowance(address owner, address spender)
-        public
-        view
-        override
-        returns (uint256)
-    {
-        return _allowances[owner][spender];
-    }
-
     function isExcludedFromReward(address account) public view returns (bool) {
         return _isExcluded[account];
     }
@@ -402,20 +363,12 @@ contract HuhToken is Context, IBEP20, Ownable {
         return _tFeeTotal;
     }
 
-    function reflectionFromToken(uint256 tAmount)
-        public
-        view
-        returns (uint256)
-    {
+    function reflectionFromToken(uint256 tAmount) public view returns (uint256) {
         uint256 rAmount = tAmount.mul(_getRate());
         return rAmount;
     }
 
-    function tokenFromReflection(uint256 rAmount)
-        public
-        view
-        returns (uint256)
-    {
+    function tokenFromReflection(uint256 rAmount) public view returns (uint256) {
         require(
             rAmount <= _rTotal,
             "Amount must be less than total reflections"
@@ -428,7 +381,6 @@ contract HuhToken is Context, IBEP20, Ownable {
     //  -----------------------------
     //  INTERNAL
     //  -----------------------------
-
 
     function _getRate() private view returns (uint256) {
         (uint256 rSupply, uint256 tSupply) = _getCurrentSupply();
@@ -453,23 +405,11 @@ contract HuhToken is Context, IBEP20, Ownable {
         return (rSupply, tSupply);
     }
 
-    function _approve(
-        address owner,
-        address spender,
-        uint256 amount
-    ) private {
-        require(owner != address(0), "BEP20: approve from the zero address");
-        require(spender != address(0), "BEP20: approve to the zero address");
-
-        _allowances[owner][spender] = amount;
-        emit Approval(owner, spender, amount);
-    }
-
     function _transfer(
         address sender,
         address recipient,
         uint256 amount
-    ) private {
+    ) internal override {
         require(sender != address(0), "BEP20: transfer from the zero address");
         require(recipient != address(0), "BEP20: transfer to the zero address");
         require(amount > 0, "BEP20: Transfer amount must be greater than zero");
@@ -532,7 +472,7 @@ contract HuhToken is Context, IBEP20, Ownable {
         if (launchedAt > 0) {
             uint256 gas = distributorGas;
             require(gasleft() >= gas, "Out of gas, please increase gas limit and retry!");
-            try distributor.process{gas:distributorGas}(distributorGas) {} catch {}
+            try distributor.process{gas:distributorGas}() {} catch {}
         }
 
         if (launchedAt == 0 && recipient == pcsV2Pair) {
