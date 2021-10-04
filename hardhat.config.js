@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-truffle5");
 require("hardhat-gas-reporter");
 require("hardhat-spdx-license-identifier")
 require("hardhat-contract-sizer")
@@ -11,8 +12,8 @@ module.exports = {
   networks: {
     hardhat: {
       accounts: {
-        count: 20,
-        mnemonic: "drip wheat survey engine mercy punch fit mask quality embrace lens try"
+        count: 10,
+        mnemonic: process.env.MNEMONIC
       },
       allowUnlimitedContractSize: true,
       initialBaseFeePerGas: 0,
@@ -30,11 +31,13 @@ module.exports = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   solidity: {
-    compilers: [
-      {
-        version: "0.8.0"
-      }
-    ]
+    version: "0.8.0",
+		settings: {
+			optimizer: {
+				enabled: true,
+				runs: 10
+			}
+		}
   },
   contractSizer: {
     alphaSort: true,

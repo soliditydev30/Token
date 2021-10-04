@@ -5,11 +5,11 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/IDividendDistributor.sol";
 import "./interfaces/IUniswap.sol";
 import "./DividendDistributor.sol";
+import "hardhat/console.sol";
 
-contract HuhToken is Context, ERC20, Ownable {
+contract HuhToken is ERC20, Ownable {
     using SafeMath for uint256;
 
     string constant _NAME = "HuhToken";
@@ -17,20 +17,9 @@ contract HuhToken is Context, ERC20, Ownable {
     uint8 constant _DECIMALS = 9;
 
     uint256 private constant _MAX = ~uint256(0);
-    uint256 private _tTotal = 1 * 10 ** 15 * ( 10** _DECIMALS); // 1 Quadrilion HUH
+    uint256 private _tTotal = 1 * 10 ** 15 * (10 ** _DECIMALS); // 1 Quadrilion HUH
     uint256 private _rTotal = (_MAX - (_MAX % _tTotal));
     uint256 private _tFeeTotal;
-
-
-    //  +---------------------------+------+-----+------+------------+--------------+---------+
-    //  |                           | BNB% | LP% | HUH% | Marketing% | Layer 2 BNB% | Total % |
-    //  +---------------------------+------+-----+------+------------+--------------+---------+
-    //  | Normal Buy                | 5    | 1   | 8    | 1          |              | 15      |
-    //  | Whitelisted Buy (layer 1) | 10   | 1   | 3    | 1          |              | 15      |
-    //  | Whitelisted Buy (layer 2) | 10   | 1   | 1    | 1          | 2            | 15      |
-    //  | Normal Sell               | 5    | 1   | 8    | 1          |              | 15      |
-    //  | Whitelisted Sell          | 5    | 1   | 3    | 1          |              | 10      |
-    //  +---------------------------+------+-----+------+------------+--------------+---------+
 
     uint256 public liquidityFeeOnBuy = 1;
     uint256 public BNBreflectionFeeOnBuy = 5;
@@ -113,22 +102,22 @@ contract HuhToken is Context, ERC20, Ownable {
     //  CONSTRUCTOR
     //  -----------------------------
 
-    constructor() ERC20(_NAME, _SYMBOL) {
-        IUniswapV2Router02 _pancakeswapV2Router =
-            IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+    constructor(address swapaddress) ERC20(_NAME, _SYMBOL) {
+        IUniswapV2Router02 _pancakeswapV2Router = IUniswapV2Router02(swapaddress);
 
-        // Create a uniswap pair for this new token
         pcsV2Pair = IUniswapV2Factory(_pancakeswapV2Router.factory()).createPair(
             address(this),
             _pancakeswapV2Router.WETH()
         );
         pcsV2Router = _pancakeswapV2Router;
+
         _allowances[address(this)][address(pcsV2Router)] = _MAX;
         distributor = IDividendDistributor(new DividendDistributor());
 
         _rOwned[msg.sender] = _rTotal;
         _isExcludedFromFee[msg.sender] = true;
         _isExcludedFromFee[address(this)] = true;
+
         _isExcludedFromDividend[address(this)] = true;
         _isExcludedFromDividend[pcsV2Pair] = true;
         _isExcludedFromDividend[address(0)] = true;
@@ -255,8 +244,6 @@ contract HuhToken is Context, ERC20, Ownable {
 
         _registerCode(account, code_);
     }
-
-
     //  -----------------------------
     //  SETTERS
     //  -----------------------------
@@ -331,7 +318,6 @@ contract HuhToken is Context, ERC20, Ownable {
     //  -----------------------------
     //  GETTERS
     //  -----------------------------
-
     function name() public pure override returns (string memory) {
         return _NAME;
     }
@@ -349,9 +335,7 @@ contract HuhToken is Context, ERC20, Ownable {
     }
 
     function balanceOf(address account) public view override returns (uint256) {
-        if (_isExcluded[account])
-            return _tOwned[account];
-
+        if (_isExcluded[account]) return _tOwned[account];
         return tokenFromReflection(_rOwned[account]);
     }
 
@@ -369,10 +353,7 @@ contract HuhToken is Context, ERC20, Ownable {
     }
 
     function tokenFromReflection(uint256 rAmount) public view returns (uint256) {
-        require(
-            rAmount <= _rTotal,
-            "Amount must be less than total reflections"
-        );
+        require(rAmount <= _rTotal, "Amount must be less than total reflections");
         uint256 currentRate = _getRate();
         return rAmount.div(currentRate);
     }
@@ -453,6 +434,7 @@ contract HuhToken is Context, ERC20, Ownable {
                 _basicTransfer(sender, recipient, amount);
             }
         }
+
 
         if (!_isExcludedFromDividend[sender])
             try distributor.setShare(sender, balanceOf(sender)) {} catch {}
@@ -696,7 +678,6 @@ contract HuhToken is Context, ERC20, Ownable {
     }
 
     function _excludeFromReward(address account) private {
-        // require(account != 0x10ED43C718714eb63d5aA57B78B54704E256024E, 'We can not exclude PancakeSwap router.');
         require(!_isExcluded[account], "Account is already excluded");
 
         if (_rOwned[account] > 0) {

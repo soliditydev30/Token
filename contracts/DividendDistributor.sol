@@ -9,7 +9,7 @@ import "./interfaces/IDividendDistributor.sol";
 contract DividendDistributor is IDividendDistributor {
     using SafeMath for uint256;
 
-    address _token;
+    address private _token;
 
     struct Share {
         uint256 amount;
@@ -17,9 +17,9 @@ contract DividendDistributor is IDividendDistributor {
         uint256 totalRealised;
     }
 
-    address[] shareholders;
-    mapping(address => uint256) shareholderIndexes;
-    mapping(address => uint256) shareholderClaims;
+    address[] private shareholders;
+    mapping(address => uint256) private shareholderIndexes;
+    mapping(address => uint256) private shareholderClaims;
 
     mapping(address => Share) public shares;
 
@@ -29,17 +29,18 @@ contract DividendDistributor is IDividendDistributor {
     uint256 public dividendsPerShare;
     uint256 public dividendsPerShareAccuracyFactor = 10 ** 36;
 
-    uint256 currentIndex;
+    uint256 private currentIndex;
 
-    bool initialized;
+    bool private initialized;
     modifier initialization() {
-        require(!initialized);
+        require(!initialized, "Already initialized");
         _;
         initialized = true;
     }
 
     modifier onlyToken() {
-        require(msg.sender == _token); _;
+        require(msg.sender == _token, "Only token available"); 
+        _;
     }
 
     constructor () {
@@ -101,7 +102,7 @@ contract DividendDistributor is IDividendDistributor {
         uint256 amount = getUnpaidEarnings(shareholder);
         if (amount > 0) {
             totalDistributed = totalDistributed.add(amount);
-            (bool success,) = payable(shareholder).call{value: amount, gas: 30000}("");
+            (bool success,) = payable(shareholder).call{ value: amount, gas: 30000 }("");
             require(success, "distributeDividend: Could not transfer funds!");
 
             shareholderClaims[shareholder] = block.timestamp;
