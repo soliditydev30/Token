@@ -19,24 +19,30 @@ describe("HuhToken", async function() {
       [owner, user1, user2, user3, user4] = await ethers.getSigners()
       console.log('Owner:', owner.address)
 
+      // Weth
       weth = await deployContract(owner, WETH9)
       console.log("Weth:", weth.address)
 
+      // Uniswap Factory
       factory = await deployContract(owner, UniswapV2Factory, [owner.address])
       console.log('Factory:', factory.address)
 
+      // Uniswap Router
       router = await deployContract(owner, UniswapV2Router02, [factory.address, weth.address])
       console.log('Router:', router.address, 'Router Factory:', await router.factory())
 
+      // Huh Token
       const HuhToken = await ethers.getContractFactory('HuhToken')
       huh = await HuhToken.deploy(router.address)
       await huh.deployed()
       console.log('Token: ', huh.address)
-         
+      
+      // Uniswap Pair
       const pairAddress = await factory.getPair(huh.address, weth.address)
       pair = new ethers.Contract(pairAddress, JSON.stringify(IUniswapV2Pair.abi), owner).connect(owner)
       console.log('Pair:', pair.address, 'Pair Factory:', await pair.factory())
 
+      // Test ERC20 Token
       const token = await deployContract(owner, ERC20, [ethers.utils.parseEther("10000")])
       await factory.createPair(token.address, weth.address)
       const tokenPairAddress = await factory.getPair(token.address, weth.address)
